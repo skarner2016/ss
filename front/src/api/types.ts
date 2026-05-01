@@ -141,7 +141,6 @@ export interface FavoriteParams {
 }
 
 export interface FavoriteListParams {
-  user_id: number
   page: number
   page_size: number
 }

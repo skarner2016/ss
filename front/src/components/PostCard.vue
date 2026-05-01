@@ -11,12 +11,12 @@
         :target-type="1"
         :liked="post.is_liked ?? false"
         :count="post.like_count"
-        :query-key="['posts']"
+        :query-key="props.queryKey ?? ['posts']"
       />
       <FavoriteButton
         :post-id="post.id"
         :favorited="post.is_favorited ?? false"
-        :query-key="['posts']"
+        :query-key="props.queryKey ?? ['posts']"
       />
       <span class="stat-item">
         <el-icon><ChatDotRound /></el-icon>
@@ -34,7 +34,7 @@ import { formatTime } from '@/utils/time'
 import LikeButton from '@/components/LikeButton.vue'
 import FavoriteButton from '@/components/FavoriteButton.vue'
 
-defineProps<{ post: Post }>()
+const props = defineProps<{ post: Post; queryKey?: string[] }>()
 
 const router = useRouter()
 </script>

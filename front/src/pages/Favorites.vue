@@ -1,10 +1,10 @@
 <template>
   <div class="favorites-page">
     <h2>我的收藏</h2>
-    <div v-if="favoritePosts?.length === 0 && !isLoading" class="empty-state">
+    <div v-if="posts?.length === 0 && !isLoading" class="empty-state">
       <el-empty description="暂无收藏" />
     </div>
-    <PostCard v-for="post in favoritePosts" :key="post.id" :post="post" />
+    <PostCard v-for="post in posts" :key="post.id" :post="post" :query-key="['favorites']" />
     <div v-if="isLoading" class="loading">
       <el-icon class="is-loading"><Loading /></el-icon>
       加载中...
@@ -17,31 +17,14 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { Loading } from '@element-plus/icons-vue'
 import { getFavoriteList } from '@/api/favorite'
-import { getPostDetail } from '@/api/post'
-import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/PostCard.vue'
 
-const authStore = useAuthStore()
-
-const { data: favData, isLoading } = useQuery({
+const { data, isLoading } = useQuery({
   queryKey: ['favorites'],
-  queryFn: () => getFavoriteList({ user_id: authStore.user!.id, page: 1, page_size: 50 }),
+  queryFn: () => getFavoriteList({ page: 1, page_size: 50 }),
 })
 
-// Note: N+1 query — backend favorites list doesn't return inline post data.
-// Each favorite triggers a separate getPostDetail request.
-// TODO: Add batch endpoint or embed post data in favorites response.
-const { data: favoritePosts } = useQuery({
-  queryKey: ['favoritePosts', favData],
-  queryFn: async () => {
-    if (!favData.value?.items.length) return []
-    const posts = await Promise.all(
-      favData.value.items.map((fav) => getPostDetail(fav.post_id))
-    )
-    return posts
-  },
-  enabled: computed(() => !!favData.value?.items.length),
-})
+const posts = computed(() => data.value?.items ?? [])
 </script>
 
 <style scoped>
