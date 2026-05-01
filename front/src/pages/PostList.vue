@@ -13,7 +13,7 @@
       加载中...
     </div>
     <div v-else-if="hasMore" class="load-more" ref="loadMoreRef">
-      <el-button text @click="fetchNextPage">加载更多</el-button>
+      <el-button text @click="() => fetchNextPage()">加载更多</el-button>
     </div>
     <div v-else-if="flattenPosts.length > 0" class="no-more">
       没有更多了

@@ -1,7 +1,7 @@
 <template>
   <div class="favorites-page">
     <h2>我的收藏</h2>
-    <div v-if="favoritePosts.length === 0 && !isLoading" class="empty-state">
+    <div v-if="favoritePosts?.length === 0 && !isLoading" class="empty-state">
       <el-empty description="暂无收藏" />
     </div>
     <PostCard v-for="post in favoritePosts" :key="post.id" :post="post" />
