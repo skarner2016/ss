@@ -22,5 +22,12 @@ class ErrorCode:
     ALREADY_FAVORITED = (4003, "已经收藏过了")
     NOT_FAVORITED = (4004, "未收藏")
 
+    # 频道错误 6xxx
+    CHANNEL_NOT_FOUND = (6001, "频道不存在")
+    CHANNEL_NAME_EXISTS = (6002, "频道名称已存在")
+    CHANNEL_HAS_POSTS = (6003, "频道下存在帖子，无法删除")
+    POST_CHANNEL_LIMIT = (6004, "每篇帖子最多关联3个频道")
+    POST_CHANNEL_INVALID = (6005, "包含无效的频道ID")
+
     # 系统错误 5xxx
     SYSTEM_ERROR = (5000, "系统异常")

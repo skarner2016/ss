@@ -5,6 +5,7 @@ from app.models.comment_model import CommentModel
 from app.models.reply_model import ReplyModel
 from app.models.like_model import LikeModel
 from app.models.favorite_model import FavoriteModel
+from app.models.channel_model import ChannelModel, PostChannelModel
 
 __all__ = [
     "Base",
@@ -14,4 +15,6 @@ __all__ = [
     "ReplyModel",
     "LikeModel",
     "FavoriteModel",
+    "ChannelModel",
+    "PostChannelModel",
 ]

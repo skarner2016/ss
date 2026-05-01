@@ -32,20 +32,38 @@ class PostService:
         return post
 
     @staticmethod
-    async def get_list(db: AsyncSession, page: int, page_size: int) -> tuple[list[PostModel], int]:
-        total_result = await db.execute(
-            select(func.count()).select_from(PostModel).where(PostModel.deleted_at.is_(None))
-        )
-        total = total_result.scalar()
+    async def get_list(db: AsyncSession, page: int, page_size: int, channel_id: int | None = None) -> tuple[list[PostModel], int]:
+        from app.models.channel_model import PostChannelModel
+        base_filter = PostModel.deleted_at.is_(None)
 
-        result = await db.execute(
-            select(PostModel)
-            .where(PostModel.deleted_at.is_(None))
-            .order_by(PostModel.id.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-        )
-        return result.scalars().all(), total
+        if channel_id is not None:
+            count_stmt = (
+                select(func.count())
+                .select_from(PostModel)
+                .join(PostChannelModel, PostChannelModel.post_id == PostModel.id)
+                .where(base_filter, PostChannelModel.channel_id == channel_id)
+            )
+            list_stmt = (
+                select(PostModel)
+                .join(PostChannelModel, PostChannelModel.post_id == PostModel.id)
+                .where(base_filter, PostChannelModel.channel_id == channel_id)
+                .order_by(PostModel.id.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        else:
+            count_stmt = select(func.count()).select_from(PostModel).where(base_filter)
+            list_stmt = (
+                select(PostModel)
+                .where(base_filter)
+                .order_by(PostModel.id.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+
+        total = (await db.execute(count_stmt)).scalar()
+        posts = (await db.execute(list_stmt)).scalars().all()
+        return posts, total
 
     @staticmethod
     async def update(db: AsyncSession, user_id: int, post_id: int, title: str | None, content: str | None) -> PostModel:

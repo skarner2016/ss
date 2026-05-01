@@ -6,6 +6,7 @@ from app.schemas.post_schema import (
 )
 from app.schemas.common_schema import BaseResponse, PageData
 from app.services.post_service import PostService
+from app.services.channel_service import ChannelService
 from app.models.user_model import UserModel
 from app.models.like_model import LikeModel
 from app.models.favorite_model import FavoriteModel
@@ -18,12 +19,12 @@ router = APIRouter(prefix="/api/post", tags=["帖子"])
 async def create_post(req: PostCreateRequest):
     db = get_db()
     user = require_login()
+    if req.channel_ids:
+        await ChannelService.validate_channel_ids(db, req.channel_ids)
     post = await PostService.create(db, user.id, req.title, req.content)
-    return BaseResponse(data={
-        "id": post.id,
-        "title": post.title,
-        "content": post.content,
-    })
+    if req.channel_ids:
+        await ChannelService.set_post_channels(db, post.id, req.channel_ids)
+    return BaseResponse(data={"id": post.id, "title": post.title, "content": post.content})
 
 
 @router.post("/detail")
@@ -31,7 +32,6 @@ async def post_detail(req: PostDetailRequest):
     db = get_db()
     post = await PostService.get_detail(db, req.post_id)
 
-    # 查询作者信息
     author_result = await db.execute(select(UserModel).where(UserModel.id == post.user_id))
     author = author_result.scalar_one_or_none()
 
@@ -56,6 +56,8 @@ async def post_detail(req: PostDetailRequest):
         )
         is_favorited = fav_result.scalar_one_or_none() is not None
 
+    channels_map = await ChannelService.get_channels_for_posts(db, [post.id])
+
     return BaseResponse(data={
         "id": post.id,
         "user_id": post.user_id,
@@ -67,6 +69,7 @@ async def post_detail(req: PostDetailRequest):
         "status": post.status,
         "is_liked": is_liked,
         "is_favorited": is_favorited,
+        "channels": channels_map.get(post.id, []),
         "created_at": post.created_at.isoformat(),
         "updated_at": post.updated_at.isoformat(),
     })
@@ -75,10 +78,9 @@ async def post_detail(req: PostDetailRequest):
 @router.post("/list")
 async def post_list(req: PostListRequest):
     db = get_db()
-    posts, total = await PostService.get_list(db, req.page, req.page_size)
+    posts, total = await PostService.get_list(db, req.page, req.page_size, req.channel_id)
     total_pages = (total + req.page_size - 1) // req.page_size
 
-    # 批量查询作者昵称
     user_ids = list({p.user_id for p in posts})
     user_map: dict[int, str | None] = {}
     if user_ids:
@@ -86,7 +88,6 @@ async def post_list(req: PostListRequest):
         for row in user_result.all():
             user_map[row.id] = row.nickname
 
-    # 批量查询当前用户点赞/收藏状态
     liked_ids: set[int] = set()
     favorited_ids: set[int] = set()
     current_user = get_current_user()
@@ -109,6 +110,9 @@ async def post_list(req: PostListRequest):
         )
         favorited_ids = {row[0] for row in fav_result.all()}
 
+    post_ids = [p.id for p in posts]
+    channels_map = await ChannelService.get_channels_for_posts(db, post_ids)
+
     items = [
         {
             "id": p.id,
@@ -119,6 +123,7 @@ async def post_list(req: PostListRequest):
             "comment_count": p.comment_count,
             "is_liked": p.id in liked_ids,
             "is_favorited": p.id in favorited_ids,
+            "channels": channels_map.get(p.id, []),
             "created_at": p.created_at.isoformat(),
         }
         for p in posts
@@ -132,12 +137,12 @@ async def post_list(req: PostListRequest):
 async def update_post(req: PostUpdateRequest):
     db = get_db()
     user = require_login()
+    if req.channel_ids is not None:
+        await ChannelService.validate_channel_ids(db, req.channel_ids)
     post = await PostService.update(db, user.id, req.post_id, req.title, req.content)
-    return BaseResponse(data={
-        "id": post.id,
-        "title": post.title,
-        "content": post.content,
-    })
+    if req.channel_ids is not None:
+        await ChannelService.set_post_channels(db, post.id, req.channel_ids)
+    return BaseResponse(data={"id": post.id, "title": post.title, "content": post.content})
 
 
 @router.post("/delete")

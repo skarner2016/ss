@@ -4,12 +4,14 @@ from pydantic import BaseModel, Field
 class PostCreateRequest(BaseModel):
     title: str = Field(max_length=200)
     content: str = Field(min_length=1)
+    channel_ids: list[int] = Field(default_factory=list)
 
 
 class PostUpdateRequest(BaseModel):
     post_id: int
     title: str | None = Field(default=None, max_length=200)
     content: str | None = None
+    channel_ids: list[int] | None = None
 
 
 class PostDeleteRequest(BaseModel):
@@ -19,6 +21,7 @@ class PostDeleteRequest(BaseModel):
 class PostListRequest(BaseModel):
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
+    channel_id: int | None = None
 
 
 class PostDetailRequest(BaseModel):
