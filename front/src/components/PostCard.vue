@@ -2,14 +2,22 @@
   <el-card class="post-card" shadow="hover" @click="router.push(`/post/${post.id}`)">
     <h3 class="post-title">{{ post.title }}</h3>
     <p class="post-meta">
-      <span class="post-author">{{ authorName || post.author_nickname || '用户 #' + post.user_id }}</span>
+      <span class="post-author">{{ post.author_nickname || '用户 #' + post.user_id }}</span>
       <span class="post-time">{{ formatTime(post.created_at) }}</span>
     </p>
-    <div class="post-stats">
-      <span class="stat-item">
-        <el-icon><Star /></el-icon>
-        {{ post.like_count }}
-      </span>
+    <div class="post-stats" @click.stop>
+      <LikeButton
+        :target-id="post.id"
+        :target-type="1"
+        :liked="post.is_liked ?? false"
+        :count="post.like_count"
+        :query-key="['posts']"
+      />
+      <FavoriteButton
+        :post-id="post.id"
+        :favorited="post.is_favorited ?? false"
+        :query-key="['posts']"
+      />
       <span class="stat-item">
         <el-icon><ChatDotRound /></el-icon>
         {{ post.comment_count }}
@@ -20,14 +28,13 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Star, ChatDotRound } from '@element-plus/icons-vue'
+import { ChatDotRound } from '@element-plus/icons-vue'
 import type { Post } from '@/api/types'
 import { formatTime } from '@/utils/time'
+import LikeButton from '@/components/LikeButton.vue'
+import FavoriteButton from '@/components/FavoriteButton.vue'
 
-const props = defineProps<{
-  post: Post
-  authorName?: string
-}>()
+defineProps<{ post: Post }>()
 
 const router = useRouter()
 </script>
@@ -53,15 +60,14 @@ const router = useRouter()
   color: #909399;
   font-size: 13px;
   margin: 0 0 8px 0;
-}
-
-.post-author {
-  margin-right: 12px;
+  display: flex;
+  gap: 12px;
 }
 
 .post-stats {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 8px;
   color: #909399;
   font-size: 13px;
 }

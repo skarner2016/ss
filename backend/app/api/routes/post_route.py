@@ -86,6 +86,29 @@ async def post_list(req: PostListRequest):
         for row in user_result.all():
             user_map[row.id] = row.nickname
 
+    # 批量查询当前用户点赞/收藏状态
+    liked_ids: set[int] = set()
+    favorited_ids: set[int] = set()
+    current_user = get_current_user()
+    if current_user and posts:
+        post_ids = [p.id for p in posts]
+        like_result = await db.execute(
+            select(LikeModel.target_id).where(
+                LikeModel.user_id == current_user.id,
+                LikeModel.target_type == 1,
+                LikeModel.target_id.in_(post_ids),
+            )
+        )
+        liked_ids = {row[0] for row in like_result.all()}
+
+        fav_result = await db.execute(
+            select(FavoriteModel.post_id).where(
+                FavoriteModel.user_id == current_user.id,
+                FavoriteModel.post_id.in_(post_ids),
+            )
+        )
+        favorited_ids = {row[0] for row in fav_result.all()}
+
     items = [
         {
             "id": p.id,
@@ -94,6 +117,8 @@ async def post_list(req: PostListRequest):
             "title": p.title,
             "like_count": p.like_count,
             "comment_count": p.comment_count,
+            "is_liked": p.id in liked_ids,
+            "is_favorited": p.id in favorited_ids,
             "created_at": p.created_at.isoformat(),
         }
         for p in posts
