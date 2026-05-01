@@ -5,6 +5,16 @@
       <router-link :to="`/user/${post.user_id}`" class="post-author">{{ post.author_nickname || '用户 #' + post.user_id }}</router-link>
       <span class="post-time">{{ formatTime(post.created_at) }}</span>
     </div>
+    <div v-if="post.channels && post.channels.length > 0" class="post-channels">
+      <el-tag
+        v-for="ch in post.channels"
+        :key="ch.id"
+        size="small"
+        type="info"
+        class="channel-tag"
+        @click="router.push({ path: '/', query: { channel_id: ch.id } })"
+      >{{ ch.name }}</el-tag>
+    </div>
     <div class="post-content md-preview" v-html="renderedContent" />
 
     <div class="post-actions">
@@ -97,7 +107,7 @@ async function handleDelete() {
 }
 
 .post-meta {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   color: #909399;
   font-size: 14px;
 }
@@ -106,6 +116,17 @@ async function handleDelete() {
   color: #409eff;
   text-decoration: none;
   margin-right: 12px;
+}
+
+.post-channels {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.channel-tag {
+  cursor: pointer;
 }
 
 .post-content {

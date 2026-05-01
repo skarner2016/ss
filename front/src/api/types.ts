@@ -38,6 +38,7 @@ export interface Post {
   updated_at?: string
   is_liked?: boolean
   is_favorited?: boolean
+  channels?: Channel[]
 }
 
 // Comment
@@ -75,6 +76,13 @@ export interface Favorite {
   created_at: string
 }
 
+// Channel
+export interface Channel {
+  id: number
+  name: string
+  sort_order: number
+}
+
 // Request types
 export interface LoginParams {
   email: string
@@ -95,17 +103,20 @@ export interface UpdateMeParams {
 export interface PostListParams {
   page: number
   page_size: number
+  channel_id?: number | null
 }
 
 export interface PostCreateParams {
   title: string
   content: string
+  channel_ids?: number[]
 }
 
 export interface PostUpdateParams {
   post_id: number
   title?: string
   content?: string
+  channel_ids?: number[] | null
 }
 
 export interface CommentCreateParams {

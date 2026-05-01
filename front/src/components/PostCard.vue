@@ -5,6 +5,16 @@
       <span class="post-author">{{ post.author_nickname || '用户 #' + post.user_id }}</span>
       <span class="post-time">{{ formatTime(post.created_at) }}</span>
     </p>
+    <div v-if="post.channels && post.channels.length > 0" class="post-channels" @click.stop>
+      <el-tag
+        v-for="ch in post.channels"
+        :key="ch.id"
+        size="small"
+        type="info"
+        class="channel-tag"
+        @click="router.push({ path: '/', query: { channel_id: ch.id } })"
+      >{{ ch.name }}</el-tag>
+    </div>
     <div class="post-stats" @click.stop>
       <LikeButton
         :target-id="post.id"
@@ -62,6 +72,17 @@ const router = useRouter()
   margin: 0 0 8px 0;
   display: flex;
   gap: 12px;
+}
+
+.post-channels {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.channel-tag {
+  cursor: pointer;
 }
 
 .post-stats {
