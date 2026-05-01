@@ -21,7 +21,7 @@ request.interceptors.response.use(
   (response) => {
     const res = response.data as ApiResponse
     if (res.code === 0) {
-      return res.data
+      return res.data as any
     }
     if (res.code === 2001) {
       const authStore = useAuthStore()

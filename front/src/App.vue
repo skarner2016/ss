@@ -1,14 +1,3 @@
-<script setup lang="ts">
-</script>
-
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+  <router-view />
 </template>
-
-<style scoped>
-#app {
-  min-height: 100vh;
-}
-</style>
