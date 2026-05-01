@@ -1,11 +1,15 @@
 from fastapi import APIRouter
+from sqlalchemy import select
 from app.schemas.post_schema import (
     PostCreateRequest, PostUpdateRequest, PostDeleteRequest,
     PostListRequest, PostDetailRequest
 )
 from app.schemas.common_schema import BaseResponse, PageData
 from app.services.post_service import PostService
-from app.core.context import get_db, require_login
+from app.models.user_model import UserModel
+from app.models.like_model import LikeModel
+from app.models.favorite_model import FavoriteModel
+from app.core.context import get_db, require_login, get_current_user
 
 router = APIRouter(prefix="/api/post", tags=["帖子"])
 
@@ -26,14 +30,43 @@ async def create_post(req: PostCreateRequest):
 async def post_detail(req: PostDetailRequest):
     db = get_db()
     post = await PostService.get_detail(db, req.post_id)
+
+    # 查询作者信息
+    author_result = await db.execute(select(UserModel).where(UserModel.id == post.user_id))
+    author = author_result.scalar_one_or_none()
+
+    is_liked = False
+    is_favorited = False
+    user = get_current_user()
+    if user:
+        like_result = await db.execute(
+            select(LikeModel).where(
+                LikeModel.user_id == user.id,
+                LikeModel.target_type == 1,
+                LikeModel.target_id == post.id,
+            )
+        )
+        is_liked = like_result.scalar_one_or_none() is not None
+
+        fav_result = await db.execute(
+            select(FavoriteModel).where(
+                FavoriteModel.user_id == user.id,
+                FavoriteModel.post_id == post.id,
+            )
+        )
+        is_favorited = fav_result.scalar_one_or_none() is not None
+
     return BaseResponse(data={
         "id": post.id,
         "user_id": post.user_id,
+        "author_nickname": author.nickname if author else None,
         "title": post.title,
         "content": post.content,
         "like_count": post.like_count,
         "comment_count": post.comment_count,
         "status": post.status,
+        "is_liked": is_liked,
+        "is_favorited": is_favorited,
         "created_at": post.created_at.isoformat(),
         "updated_at": post.updated_at.isoformat(),
     })
@@ -44,10 +77,20 @@ async def post_list(req: PostListRequest):
     db = get_db()
     posts, total = await PostService.get_list(db, req.page, req.page_size)
     total_pages = (total + req.page_size - 1) // req.page_size
+
+    # 批量查询作者昵称
+    user_ids = list({p.user_id for p in posts})
+    user_map: dict[int, str | None] = {}
+    if user_ids:
+        user_result = await db.execute(select(UserModel.id, UserModel.nickname).where(UserModel.id.in_(user_ids)))
+        for row in user_result.all():
+            user_map[row.id] = row.nickname
+
     items = [
         {
             "id": p.id,
             "user_id": p.user_id,
+            "author_nickname": user_map.get(p.user_id),
             "title": p.title,
             "like_count": p.like_count,
             "comment_count": p.comment_count,

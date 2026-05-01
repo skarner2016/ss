@@ -39,6 +39,21 @@ async def me():
     })
 
 
+@router.post("/user_info")
+async def user_info(user_id: int):
+    db = get_db()
+    user = await AuthService.get_user_info(db, user_id)
+    return BaseResponse(data={
+        "id": user.id,
+        "email": user.email,
+        "nickname": user.nickname,
+        "avatar_url": user.avatar_url,
+        "bio": user.bio,
+        "status": user.status,
+        "created_at": user.created_at.isoformat(),
+    })
+
+
 @router.post("/update_me")
 async def update_me(req: UpdateMeRequest):
     db = get_db()

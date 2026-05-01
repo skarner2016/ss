@@ -4,7 +4,7 @@
       <div class="header-left">
         <router-link to="/" class="logo">社区</router-link>
       </div>
-      <div class="header-center">
+      <div class="header-center desktop-menu">
         <el-menu mode="horizontal" :ellipsis="false" router :default-active="route.path">
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item v-if="authStore.isLoggedIn" index="/favorites">收藏</el-menu-item>
@@ -29,10 +29,46 @@
           </el-dropdown>
         </template>
         <template v-else>
-          <el-button type="primary" @click="router.push('/login')">登录</el-button>
+          <el-button type="primary" class="desktop-login-btn" @click="router.push('/login')">登录</el-button>
         </template>
+        <el-button class="hamburger" text @click="drawerVisible = true">
+          <el-icon :size="22"><Menu /></el-icon>
+        </el-button>
       </div>
     </el-header>
+
+    <el-drawer v-model="drawerVisible" direction="rtl" size="240px" :show-close="false">
+      <div class="drawer-menu">
+        <router-link to="/" class="drawer-item" @click="drawerVisible = false">首页</router-link>
+        <router-link
+          v-if="authStore.isLoggedIn"
+          to="/favorites"
+          class="drawer-item"
+          @click="drawerVisible = false"
+        >
+          收藏
+        </router-link>
+        <template v-if="authStore.isLoggedIn">
+          <router-link
+            :to="`/user/${authStore.user?.id}`"
+            class="drawer-item"
+            @click="drawerVisible = false"
+          >
+            个人中心
+          </router-link>
+          <div class="drawer-item drawer-logout" @click="handleLogout">退出登录</div>
+        </template>
+        <router-link
+          v-else
+          to="/login"
+          class="drawer-item"
+          @click="drawerVisible = false"
+        >
+          登录
+        </router-link>
+      </div>
+    </el-drawer>
+
     <el-main class="app-main">
       <router-view />
     </el-main>
@@ -41,12 +77,14 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
+import { Menu } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const drawerVisible = ref(false)
 
 const avatarText = computed(() => {
   const name = authStore.user?.nickname || authStore.user?.email || ''
@@ -54,6 +92,7 @@ const avatarText = computed(() => {
 })
 
 function handleLogout() {
+  drawerVisible.value = false
   authStore.logout()
   router.push('/')
 }
@@ -93,6 +132,7 @@ function handleLogout() {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .user-avatar {
@@ -101,16 +141,58 @@ function handleLogout() {
   align-items: center;
 }
 
+.hamburger {
+  display: none;
+}
+
 .app-main {
   max-width: 800px;
   margin: 0 auto;
   padding: 24px;
 }
 
+.drawer-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-item {
+  display: block;
+  padding: 12px 16px;
+  color: #303133;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: background 0.15s;
+}
+
+.drawer-item:hover {
+  background: #f5f7fa;
+}
+
+.drawer-logout {
+  cursor: pointer;
+  color: #f56c6c;
+  border-top: 1px solid #e4e7ed;
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
 @media (max-width: 768px) {
   .app-header {
     padding: 0 12px;
   }
+
+  .desktop-menu,
+  .desktop-login-btn {
+    display: none !important;
+  }
+
+  .hamburger {
+    display: inline-flex;
+  }
+
   .app-main {
     padding: 16px 12px;
   }

@@ -24,6 +24,8 @@ class AuthService:
             )
             db.add(user)
             await db.flush()
+            user.nickname = f"user_{user.id}"
+            await db.flush()
         else:
             if user.status == 0:
                 raise ApiBusinessException(*ErrorCode.USER_DISABLED)

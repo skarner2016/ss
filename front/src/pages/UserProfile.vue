@@ -30,7 +30,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { Loading } from '@element-plus/icons-vue'
-import { getMe } from '@/api/auth'
+import { getUserInfo } from '@/api/auth'
 import { getPostList } from '@/api/post'
 import PostCard from '@/components/PostCard.vue'
 
@@ -39,7 +39,7 @@ const userId = computed(() => Number(route.params.id))
 
 const { data: user } = useQuery({
   queryKey: ['user', userId.value],
-  queryFn: () => getMe(),
+  queryFn: () => getUserInfo(userId.value),
 })
 
 const { data: postData } = useQuery({

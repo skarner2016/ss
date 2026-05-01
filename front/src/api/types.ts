@@ -28,6 +28,7 @@ export interface User {
 export interface Post {
   id: number
   user_id: number
+  author_nickname?: string | null
   title: string
   content?: string
   like_count: number
@@ -44,6 +45,7 @@ export interface Comment {
   id: number
   post_id: number
   user_id: number
+  user_nickname?: string | null
   content_type: number
   content: string
   reply_count: number
@@ -56,7 +58,9 @@ export interface Reply {
   id: number
   comment_id: number
   user_id: number
+  user_nickname?: string | null
   reply_to_user_id: number | null
+  reply_to_user_nickname?: string | null
   content_type: number
   content: string
   status: number

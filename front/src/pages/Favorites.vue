@@ -28,6 +28,9 @@ const { data: favData, isLoading } = useQuery({
   queryFn: () => getFavoriteList({ user_id: authStore.user!.id, page: 1, page_size: 50 }),
 })
 
+// Note: N+1 query — backend favorites list doesn't return inline post data.
+// Each favorite triggers a separate getPostDetail request.
+// TODO: Add batch endpoint or embed post data in favorites response.
 const { data: favoritePosts } = useQuery({
   queryKey: ['favoritePosts', favData],
   queryFn: async () => {

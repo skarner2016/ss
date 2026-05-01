@@ -9,6 +9,10 @@ export function getMe() {
   return request.post<any, User>('/auth/me')
 }
 
+export function getUserInfo(userId: number) {
+  return request.post<any, User>('/auth/user_info', null, { params: { user_id: userId } })
+}
+
 export function updateMe(data: UpdateMeParams) {
   return request.post<any, User>('/auth/update_me', data)
 }

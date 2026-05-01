@@ -24,7 +24,7 @@
     <div v-for="comment in comments" :key="comment.id" class="comment-item">
       <div class="comment-header">
         <el-avatar :size="28">U</el-avatar>
-        <span class="comment-author">用户 #{{ comment.user_id }}</span>
+        <span class="comment-author">{{ comment.user_nickname || '用户 #' + comment.user_id }}</span>
         <span class="comment-time">{{ formatTime(comment.created_at) }}</span>
         <el-button
           v-if="authStore.user?.id === comment.user_id"
@@ -47,11 +47,19 @@
         <div v-if="expandedComments.has(comment.id)" class="replies-list">
           <div v-for="reply in repliesMap[comment.id]" :key="reply.id" class="reply-item">
             <div class="reply-header">
-              <span class="reply-author">用户 #{{ reply.user_id }}</span>
+              <span class="reply-author">{{ reply.user_nickname || '用户 #' + reply.user_id }}</span>
               <span v-if="reply.reply_to_user_id" class="reply-to">
-                回复 <span class="reply-to-user">用户 #{{ reply.reply_to_user_id }}</span>
+                回复 <span class="reply-to-user">{{ reply.reply_to_user_nickname || '用户 #' + reply.reply_to_user_id }}</span>
               </span>
               <span class="reply-time">{{ formatTime(reply.created_at) }}</span>
+              <el-button
+                v-if="authStore.isLoggedIn"
+                text
+                size="small"
+                @click="startReplyTo(comment.id, reply.user_id, reply.user_nickname)"
+              >
+                回复
+              </el-button>
               <el-button
                 v-if="authStore.user?.id === reply.user_id"
                 text
@@ -70,9 +78,17 @@
             <el-input
               v-model="replyContent[comment.id]"
               size="small"
-              placeholder="写回复..."
+              :placeholder="replyPlaceholder[comment.id] || '写回复...'"
             />
             <el-button size="small" type="primary" @click="submitReply(comment.id)">回复</el-button>
+            <el-button
+              v-if="replyToUser[comment.id]"
+              size="small"
+              text
+              @click="clearReplyTo(comment.id)"
+            >
+              取消
+            </el-button>
           </div>
         </div>
       </div>
@@ -94,12 +110,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCommentList, createComment, deleteComment } from '@/api/comment'
 import { getReplyList, createReply, deleteReply } from '@/api/reply'
 import { useAuthStore } from '@/stores/auth'
 import type { Comment, Reply } from '@/api/types'
+import { formatTime } from '@/utils/time'
 
 const props = defineProps<{ postId: number }>()
 
@@ -107,37 +125,46 @@ const authStore = useAuthStore()
 const queryClient = useQueryClient()
 
 const commentPage = ref(1)
+const allComments = ref<Comment[]>([])
 const newComment = ref('')
 const commentLoading = ref(false)
-const expandedComments = ref(new Set<number>())
+const expandedComments = reactive(new Set<number>())
 const replyContent = reactive<Record<number, string>>({})
+const replyToUser = reactive<Record<number, number | null>>({})
+const replyPlaceholder = reactive<Record<number, string>>({})
 const totalComments = ref(0)
-const comments = ref<Comment[]>([])
 const repliesMap = reactive<Record<number, Reply[]>>({})
-const hasMoreComments = ref(false)
+const pageSize = 20
 
-// Fetch comments
 const { data: commentData, isLoading } = useQuery({
-  queryKey: ['comments', props.postId],
-  queryFn: () => getCommentList({ post_id: props.postId, page: 1, page_size: 20 }),
+  queryKey: computed(() => ['comments', props.postId, commentPage.value]),
+  queryFn: () => getCommentList({ post_id: props.postId, page: commentPage.value, page_size: pageSize }),
 })
 
+import { watch } from 'vue'
 watch(commentData, (newData) => {
   if (newData) {
-    comments.value = newData.items
+    if (commentPage.value === 1) {
+      allComments.value = newData.items
+    } else {
+      allComments.value = [...allComments.value, ...newData.items]
+    }
     totalComments.value = newData.total
   }
 })
+
+const comments = computed(() => allComments.value)
+const hasMoreComments = computed(() => allComments.value.length < totalComments.value)
 
 function loadMoreComments() {
   commentPage.value++
 }
 
 function toggleReplies(commentId: number) {
-  if (expandedComments.value.has(commentId)) {
-    expandedComments.value.delete(commentId)
+  if (expandedComments.has(commentId)) {
+    expandedComments.delete(commentId)
   } else {
-    expandedComments.value.add(commentId)
+    expandedComments.add(commentId)
     if (!repliesMap[commentId]) {
       fetchReplies(commentId)
     }
@@ -149,11 +176,12 @@ async function fetchReplies(commentId: number) {
   repliesMap[commentId] = data.items
 }
 
-// Create comment
 const createCommentMutation = useMutation({
   mutationFn: createComment,
   onSuccess: () => {
     newComment.value = ''
+    commentPage.value = 1
+    allComments.value = []
     queryClient.invalidateQueries({ queryKey: ['comments', props.postId] })
   },
 })
@@ -168,34 +196,49 @@ async function submitComment() {
   }
 }
 
-async function handleDeleteComment(commentId: number) {
-  await deleteComment(commentId)
-  queryClient.invalidateQueries({ queryKey: ['comments', props.postId] })
+async function handleDeleteComment(id: number) {
+  try {
+    await ElMessageBox.confirm('确定删除这条评论？', '提示', { type: 'warning' })
+    await deleteComment(id)
+    allComments.value = allComments.value.filter((c) => c.id !== id)
+    totalComments.value--
+  } catch (err: any) {
+    if (err !== 'cancel') ElMessage.error('删除失败')
+  }
+}
+
+function startReplyTo(commentId: number, userId: number, nickname: string | null | undefined) {
+  replyToUser[commentId] = userId
+  replyPlaceholder[commentId] = `回复 ${nickname || '用户 #' + userId}...`
+}
+
+function clearReplyTo(commentId: number) {
+  replyToUser[commentId] = null
+  replyPlaceholder[commentId] = ''
 }
 
 async function submitReply(commentId: number) {
   const content = replyContent[commentId]
   if (!content?.trim()) return
-  await createReply({ comment_id: commentId, content })
+  await createReply({
+    comment_id: commentId,
+    content,
+    reply_to_user_id: replyToUser[commentId] || null,
+  })
   replyContent[commentId] = ''
+  replyToUser[commentId] = null
+  replyPlaceholder[commentId] = ''
   await fetchReplies(commentId)
 }
 
 async function handleDeleteReply(commentId: number, replyId: number) {
-  await deleteReply(replyId)
-  await fetchReplies(commentId)
-}
-
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}小时前`
-  return date.toLocaleDateString('zh-CN')
+  try {
+    await ElMessageBox.confirm('确定删除这条回复？', '提示', { type: 'warning' })
+    await deleteReply(replyId)
+    await fetchReplies(commentId)
+  } catch (err: any) {
+    if (err !== 'cancel') ElMessage.error('删除失败')
+  }
 }
 </script>
 

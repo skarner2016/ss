@@ -2,7 +2,7 @@
   <el-card class="post-card" shadow="hover" @click="router.push(`/post/${post.id}`)">
     <h3 class="post-title">{{ post.title }}</h3>
     <p class="post-meta">
-      <span class="post-author">{{ authorName }}</span>
+      <span class="post-author">{{ authorName || post.author_nickname || '用户 #' + post.user_id }}</span>
       <span class="post-time">{{ formatTime(post.created_at) }}</span>
     </p>
     <div class="post-stats">
@@ -22,6 +22,7 @@
 import { useRouter } from 'vue-router'
 import { Star, ChatDotRound } from '@element-plus/icons-vue'
 import type { Post } from '@/api/types'
+import { formatTime } from '@/utils/time'
 
 const props = defineProps<{
   post: Post
@@ -29,20 +30,6 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
-
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}小时前`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}天前`
-  return date.toLocaleDateString('zh-CN')
-}
 </script>
 
 <style scoped>

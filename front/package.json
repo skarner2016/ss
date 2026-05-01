@@ -12,7 +12,9 @@
     "@element-plus/icons-vue": "^2.3.2",
     "@tanstack/vue-query": "^5.100.6",
     "axios": "^1.15.2",
+    "dompurify": "^3.4.2",
     "element-plus": "^2.13.7",
+    "marked": "^18.0.2",
     "md-editor-v3": "^6.5.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
@@ -20,6 +22,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/tsconfig": "^0.9.1",

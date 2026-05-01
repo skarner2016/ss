@@ -2,7 +2,7 @@
   <div v-if="post" class="post-detail">
     <h1 class="post-title">{{ post.title }}</h1>
     <div class="post-meta">
-      <router-link :to="`/user/${post.user_id}`" class="post-author">用户 #{{ post.user_id }}</router-link>
+      <router-link :to="`/user/${post.user_id}`" class="post-author">{{ post.author_nickname || '用户 #' + post.user_id }}</router-link>
       <span class="post-time">{{ formatTime(post.created_at) }}</span>
     </div>
     <div class="post-content md-preview" v-html="renderedContent" />
@@ -39,9 +39,14 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { Loading } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 import { getPostDetail, deletePost } from '@/api/post'
 import { useAuthStore } from '@/stores/auth'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+marked.setOptions({ gfm: true, breaks: true })
+import { formatTime } from '@/utils/time'
 import LikeButton from '@/components/LikeButton.vue'
 import FavoriteButton from '@/components/FavoriteButton.vue'
 import CommentSection from '@/components/CommentSection.vue'
@@ -54,12 +59,12 @@ const queryClient = useQueryClient()
 const postId = computed(() => Number(route.params.id))
 
 const { data: post, isLoading } = useQuery({
-  queryKey: ['post', postId.value],
+  queryKey: ['post', String(postId.value)],
   queryFn: () => getPostDetail(postId.value),
 })
 
 const renderedContent = computed(() => {
-  return post.value?.content ? marked.parse(post.value.content) as string : ''
+  return post.value?.content ? DOMPurify.sanitize(marked.parse(post.value.content) as string) : ''
 })
 
 const deleteMutation = useMutation({
@@ -70,12 +75,11 @@ const deleteMutation = useMutation({
   },
 })
 
-function handleDelete() {
-  deleteMutation.mutate(postId.value)
-}
-
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('zh-CN')
+async function handleDelete() {
+  try {
+    await ElMessageBox.confirm('确定删除这篇帖子？', '提示', { type: 'warning' })
+    deleteMutation.mutate(postId.value)
+  } catch {}
 }
 </script>
 
