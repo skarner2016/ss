@@ -84,9 +84,13 @@ export interface Channel {
 }
 
 // Request types
+export interface SendCodeParams {
+  email: string
+}
+
 export interface LoginParams {
   email: string
-  password: string
+  code: string
 }
 
 export interface LoginResult {

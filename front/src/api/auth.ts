@@ -1,5 +1,9 @@
 import request from './request'
-import type { LoginParams, LoginResult, User, UpdateMeParams } from './types'
+import type { SendCodeParams, LoginParams, LoginResult, User, UpdateMeParams } from './types'
+
+export function sendCode(data: SendCodeParams) {
+  return request.post<any, { message: string }>('/auth/send_code', data)
+}
 
 export function login(data: LoginParams) {
   return request.post<any, LoginResult>('/auth/login', data)
