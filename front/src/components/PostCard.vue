@@ -1,101 +1,158 @@
 <template>
-  <el-card class="post-card" shadow="hover" @click="router.push(`/post/${post.id}`)">
-    <h3 class="post-title">{{ post.title }}</h3>
-    <p class="post-meta">
-      <span class="post-author">{{ post.author_nickname || '用户 #' + post.user_id }}</span>
-      <span class="post-time">{{ formatTime(post.created_at) }}</span>
-    </p>
-    <div v-if="post.channels && post.channels.length > 0" class="post-channels" @click.stop>
-      <el-tag
-        v-for="ch in post.channels"
-        :key="ch.id"
-        size="small"
-        type="info"
-        class="channel-tag"
-        @click="router.push({ path: '/', query: { channel_id: ch.id } })"
-      >{{ ch.name }}</el-tag>
+  <div class="post-card" @click="router.push(`/post/${post.id}`)">
+    <!-- Cover placeholder -->
+    <div class="card-cover" :class="coverRatio">
+      <span class="cover-icon">🖼️</span>
     </div>
-    <div class="post-stats" @click.stop>
-      <LikeButton
-        :target-id="post.id"
-        :target-type="1"
-        :liked="post.is_liked ?? false"
-        :count="post.like_count"
-        :query-key="props.queryKey ?? ['posts']"
-      />
-      <FavoriteButton
-        :post-id="post.id"
-        :favorited="post.is_favorited ?? false"
-        :query-key="props.queryKey ?? ['posts']"
-      />
-      <span class="stat-item">
-        <el-icon><ChatDotRound /></el-icon>
-        {{ post.comment_count }}
-      </span>
+
+    <div class="card-body">
+      <p class="card-title">{{ post.title }}</p>
+
+      <div v-if="post.channels && post.channels.length" class="card-channels" @click.stop>
+        <span
+          v-for="ch in post.channels"
+          :key="ch.id"
+          class="channel-tag"
+          @click="router.push({ path: '/', query: { channel_id: ch.id } })"
+        >{{ ch.name }}</span>
+      </div>
+
+      <div class="card-footer">
+        <div class="card-avatar">{{ authorInitial }}</div>
+        <span class="card-author">{{ post.author_nickname || '用户 #' + post.user_id }}</span>
+        <div class="card-like">
+          <span class="heart" :class="{ liked: post.is_liked }">♥</span>
+          <span>{{ post.like_count }}</span>
+        </div>
+      </div>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChatDotRound } from '@element-plus/icons-vue'
 import type { Post } from '@/api/types'
-import { formatTime } from '@/utils/time'
-import LikeButton from '@/components/LikeButton.vue'
-import FavoriteButton from '@/components/FavoriteButton.vue'
 
-const props = defineProps<{ post: Post; queryKey?: string[] }>()
-
+const props = defineProps<{ post: Post }>()
 const router = useRouter()
+
+const coverRatio = computed(() => {
+  const r = props.post.id % 3
+  if (r === 0) return 'tall'
+  if (r === 1) return 'mid'
+  return 'short'
+})
+
+const authorInitial = computed(() => {
+  const name = props.post.author_nickname || String(props.post.user_id)
+  return name.charAt(0).toUpperCase()
+})
 </script>
 
 <style scoped>
 .post-card {
+  background: var(--color-card);
+  border-radius: 10px;
+  overflow: hidden;
   cursor: pointer;
-  margin-bottom: 12px;
-  transition: transform 0.2s;
+  break-inside: avoid;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-
 .post-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.post-title {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  color: #303133;
-}
-
-.post-meta {
-  color: #909399;
-  font-size: 13px;
-  margin: 0 0 8px 0;
+/* Cover */
+.card-cover {
+  width: 100%;
+  background: linear-gradient(135deg, #fff5f6 0%, #ffe0e5 100%);
   display: flex;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.card-cover.tall  { aspect-ratio: 3 / 4; }
+.card-cover.mid   { aspect-ratio: 1 / 1; }
+.card-cover.short { aspect-ratio: 4 / 3; }
+
+.cover-icon {
+  font-size: 24px;
+  opacity: 0.25;
 }
 
-.post-channels {
-  margin-bottom: 8px;
+/* Body */
+.card-body {
+  padding: 7px 9px 9px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-channels {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
+  margin-bottom: 6px;
 }
 
 .channel-tag {
+  font-size: 10px;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary-border);
+  border-radius: 8px;
+  padding: 1px 6px;
   cursor: pointer;
 }
 
-.post-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #909399;
-  font-size: 13px;
-}
-
-.stat-item {
+.card-footer {
   display: flex;
   align-items: center;
   gap: 4px;
 }
+
+.card-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary-border);
+  color: var(--color-primary);
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-author {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-like {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.heart { color: #ddd; font-size: 12px; }
+.heart.liked { color: var(--color-primary); }
 </style>

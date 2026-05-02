@@ -38,18 +38,16 @@ const route = useRoute()
 const userId = computed(() => Number(route.params.id))
 
 const { data: user } = useQuery({
-  queryKey: ['user', userId.value],
+  queryKey: computed(() => ['user', userId.value]),
   queryFn: () => getUserInfo(userId.value),
 })
 
 const { data: postData } = useQuery({
-  queryKey: ['userPosts', userId.value],
-  queryFn: () => getPostList({ page: 1, page_size: 50 }),
+  queryKey: computed(() => ['userPosts', String(userId.value)]),
+  queryFn: () => getPostList({ page: 1, page_size: 50, user_id: userId.value }),
 })
 
-const userPosts = computed(() => {
-  return postData.value?.items.filter((p) => p.user_id === userId.value) ?? []
-})
+const userPosts = computed(() => postData.value?.items ?? [])
 </script>
 
 <style scoped>
