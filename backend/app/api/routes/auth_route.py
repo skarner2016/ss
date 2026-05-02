@@ -1,16 +1,23 @@
 from fastapi import APIRouter
-from app.schemas.auth_schema import LoginRequest, UpdateMeRequest
+from app.schemas.auth_schema import SendCodeRequest, LoginRequest, UpdateMeRequest
 from app.schemas.common_schema import BaseResponse
 from app.services.auth_service import AuthService
+from app.services.code_service import send_code
 from app.core.context import get_db, require_login
 
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 
 
+@router.post("/send_code")
+async def send_verification_code(req: SendCodeRequest):
+    await send_code(req.email)
+    return BaseResponse(data={"message": "ok"})
+
+
 @router.post("/login")
 async def login(req: LoginRequest):
     db = get_db()
-    token, user = await AuthService.login_or_register(db, req.email, req.password)
+    token, user = await AuthService.login_or_register(db, req.email, req.code)
     return BaseResponse(data={
         "token": token,
         "user": {

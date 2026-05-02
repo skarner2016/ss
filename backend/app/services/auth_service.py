@@ -3,21 +3,25 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user_model import UserModel
-from app.core.security import hash_password, verify_password, create_token
+from app.core.security import create_token
 from app.core.exceptions import ApiBusinessException
 from app.core.error_codes import ErrorCode
+from app.services.code_service import verify_code
 
 
 class AuthService:
     @staticmethod
-    async def login_or_register(db: AsyncSession, email: str, password: str) -> tuple[str, UserModel]:
+    async def login_or_register(db: AsyncSession, email: str, code: str) -> tuple[str, UserModel]:
+        verified = await verify_code(email, code)
+        if not verified:
+            raise ApiBusinessException(*ErrorCode.CODE_INVALID)
+
         result = await db.execute(select(UserModel).where(UserModel.email == email))
         user = result.scalar_one_or_none()
 
         if user is None:
             user = UserModel(
                 email=email,
-                password_hash=hash_password(password),
                 status=1,
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
@@ -31,8 +35,6 @@ class AuthService:
                 raise ApiBusinessException(*ErrorCode.USER_DISABLED)
             if user.status == 2:
                 raise ApiBusinessException(*ErrorCode.USER_CANCELLED)
-            if not verify_password(password, user.password_hash):
-                raise ApiBusinessException(*ErrorCode.PASSWORD_ERROR)
 
         token = create_token({"user_id": user.id})
         return token, user
