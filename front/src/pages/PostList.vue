@@ -11,6 +11,7 @@
           v-for="post in flattenPosts"
           :key="post.id"
           :post="post"
+          :query-key="['posts']"
         />
       </div>
 

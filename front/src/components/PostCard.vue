@@ -17,13 +17,16 @@
         >{{ ch.name }}</span>
       </div>
 
-      <div class="card-footer">
+      <div class="card-footer" @click.stop>
         <div class="card-avatar">{{ authorInitial }}</div>
         <span class="card-author">{{ post.author_nickname || '用户 #' + post.user_id }}</span>
-        <div class="card-like">
-          <span class="heart" :class="{ liked: post.is_liked }">♥</span>
+        <button class="card-like" :class="{ liked: post.is_liked }" @click="handleLike">
+          <span class="heart">♥</span>
           <span>{{ post.like_count }}</span>
-        </div>
+        </button>
+        <button class="card-fav" :class="{ favorited: post.is_favorited }" @click="handleFavorite">
+          <span>{{ post.is_favorited ? '★' : '☆' }}</span>
+        </button>
       </div>
     </div>
   </div>
@@ -32,10 +35,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useAuthStore } from '@/stores/auth'
+import { doLike, cancelLike } from '@/api/like'
+import { doFavorite, cancelFavorite } from '@/api/favorite'
 import type { Post } from '@/api/types'
 
-const props = defineProps<{ post: Post }>()
+const props = defineProps<{ post: Post; queryKey?: string[] }>()
 const router = useRouter()
+const authStore = useAuthStore()
+const queryClient = useQueryClient()
+
+const invalidateKey = computed(() => props.queryKey ?? ['posts', null])
 
 const coverRatio = computed(() => {
   const r = props.post.id % 3
@@ -48,6 +59,32 @@ const authorInitial = computed(() => {
   const name = props.post.author_nickname || String(props.post.user_id)
   return name.charAt(0).toUpperCase()
 })
+
+const likeMutation = useMutation({
+  mutationFn: () => {
+    const params = { target_type: 1, target_id: props.post.id }
+    return props.post.is_liked ? cancelLike(params) : doLike(params)
+  },
+  onSettled: () => queryClient.invalidateQueries({ queryKey: invalidateKey.value }),
+})
+
+const favMutation = useMutation({
+  mutationFn: () => {
+    const params = { post_id: props.post.id }
+    return props.post.is_favorited ? cancelFavorite(params) : doFavorite(params)
+  },
+  onSettled: () => queryClient.invalidateQueries({ queryKey: invalidateKey.value }),
+})
+
+function handleLike() {
+  if (!authStore.isLoggedIn) { router.push('/login'); return }
+  likeMutation.mutate()
+}
+
+function handleFavorite() {
+  if (!authStore.isLoggedIn) { router.push('/login'); return }
+  favMutation.mutate()
+}
 </script>
 
 <style scoped>
@@ -151,8 +188,33 @@ const authorInitial = computed(() => {
   font-size: 11px;
   color: var(--color-text-muted);
   flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: color 0.15s;
 }
+.card-like:hover { color: var(--color-primary); }
+.card-like.liked { color: var(--color-primary); }
 
-.heart { color: #ddd; font-size: 12px; }
-.heart.liked { color: var(--color-primary); }
+.heart { font-size: 12px; }
+
+.card-fav {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.card-fav:hover { color: #f59e0b; }
+.card-fav.favorited { color: #f59e0b; }
 </style>
