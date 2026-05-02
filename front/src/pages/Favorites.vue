@@ -4,7 +4,7 @@
     <div v-if="posts?.length === 0 && !isLoading" class="empty-state">
       <el-empty description="暂无收藏" />
     </div>
-    <PostCard v-for="post in posts" :key="post.id" :post="post" />
+    <PostCard v-for="post in posts" :key="post.id" :post="post" :query-key="['favorites']" />
     <div v-if="isLoading" class="loading">
       <el-icon class="is-loading"><Loading /></el-icon>
       加载中...

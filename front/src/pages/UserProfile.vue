@@ -15,7 +15,7 @@
     </el-card>
 
     <h3>TA 的帖子</h3>
-    <PostCard v-for="post in userPosts" :key="post.id" :post="post" />
+    <PostCard v-for="post in userPosts" :key="post.id" :post="post" :query-key="['userPosts', String(userId)]" />
     <div v-if="userPosts.length === 0" class="empty-state">
       <el-empty description="暂无帖子" />
     </div>
