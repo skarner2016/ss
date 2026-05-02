@@ -28,7 +28,7 @@ async def send_code(email: str) -> None:
     # Send email via Resend first, store code only on success
     try:
         resend.api_key = settings.resend_api_key
-        resend.emails.send({
+        resend.Emails.send({
             "from": settings.resend_from_email,
             "to": [email],
             "subject": "Your login code",
