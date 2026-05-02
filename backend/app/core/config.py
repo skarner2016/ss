@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 1440
 
     resend_api_key: str = ""
-    resend_from_email: str = "noreply@yourdomain.com"
+    resend_from_email: str = "onboarding@resend.dev"
     code_ttl: int = 600  # 10 minutes
     code_length: int = 6
 
