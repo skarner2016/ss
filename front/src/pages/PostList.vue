@@ -2,20 +2,9 @@
   <div class="post-list-page">
     <!-- Waterfall -->
     <div class="waterfall-wrap">
-      <div v-if="flattenPosts.length === 0 && !isLoading" class="empty-state">
-        <el-empty description="暂无帖子" />
-      </div>
+      <PostGrid :posts="flattenPosts" :query-key="['posts']" :loading="isLoading && flattenPosts.length === 0" empty-text="暂无帖子" />
 
-      <div class="waterfall">
-        <PostCard
-          v-for="post in flattenPosts"
-          :key="post.id"
-          :post="post"
-          :query-key="['posts']"
-        />
-      </div>
-
-      <div v-if="isLoading" class="status-row">
+      <div v-if="isLoading && flattenPosts.length > 0" class="status-row">
         <el-icon class="is-loading"><Loading /></el-icon> 加载中...
       </div>
       <div v-else-if="hasMore" class="status-row" ref="loadMoreRef">
@@ -72,7 +61,7 @@ import { Loading } from '@element-plus/icons-vue'
 import { getPostList } from '@/api/post'
 import { getPublicChannels } from '@/api/channel'
 import { useAuthStore } from '@/stores/auth'
-import PostCard from '@/components/PostCard.vue'
+import PostGrid from '@/components/PostGrid.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -133,11 +122,6 @@ onUnmounted(() => observer?.disconnect())
 
 /* Waterfall container */
 .waterfall-wrap { flex: 1; min-width: 0; }
-
-.waterfall {
-  columns: 4;
-  column-gap: 10px;
-}
 
 /* Sidebar */
 .sidebar {

@@ -1,24 +1,20 @@
 <template>
   <div v-if="user" class="user-profile">
-    <el-card class="profile-card">
-      <div class="profile-info">
-        <el-avatar :size="64" :src="user.avatar_url || undefined">
-          {{ (user.nickname || user.email).charAt(0).toUpperCase() }}
-        </el-avatar>
-        <div class="profile-details">
-          <h2>{{ user.nickname || '用户 #' + user.id }}</h2>
-          <p v-if="user.bio" class="profile-bio">{{ user.bio }}</p>
-          <p class="profile-email">{{ user.email }}</p>
-          <p class="profile-time">注册于 {{ new Date(user.created_at).toLocaleDateString('zh-CN') }}</p>
+    <div class="profile-card">
+      <div class="profile-avatar">{{ avatarInitial }}</div>
+      <div class="profile-details">
+        <h2 class="profile-name">{{ user.nickname || '用户 #' + user.id }}</h2>
+        <p v-if="user.bio" class="profile-bio">{{ user.bio }}</p>
+        <div class="profile-meta">
+          <span>{{ user.email }}</span>
+          <span class="meta-dot">·</span>
+          <span>注册于 {{ new Date(user.created_at).toLocaleDateString('zh-CN') }}</span>
         </div>
       </div>
-    </el-card>
-
-    <h3>TA 的帖子</h3>
-    <PostCard v-for="post in userPosts" :key="post.id" :post="post" :query-key="['userPosts', String(userId)]" />
-    <div v-if="userPosts.length === 0" class="empty-state">
-      <el-empty description="暂无帖子" />
     </div>
+
+    <div class="section-header">TA 的帖子</div>
+    <PostGrid :posts="userPosts" :query-key="['userPosts', String(userId)]" empty-text="暂无帖子" />
   </div>
   <div v-else class="loading">
     <el-icon class="is-loading"><Loading /></el-icon>
@@ -32,7 +28,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { Loading } from '@element-plus/icons-vue'
 import { getUserInfo } from '@/api/auth'
 import { getPostList } from '@/api/post'
-import PostCard from '@/components/PostCard.vue'
+import PostGrid from '@/components/PostGrid.vue'
 
 const route = useRoute()
 const userId = computed(() => Number(route.params.id))
@@ -48,41 +44,76 @@ const { data: postData } = useQuery({
 })
 
 const userPosts = computed(() => postData.value?.items ?? [])
+
+const avatarInitial = computed(() => {
+  if (!user.value) return '?'
+  const name = user.value.nickname || user.value.email
+  return name.charAt(0).toUpperCase()
+})
 </script>
 
 <style scoped>
 .user-profile {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .profile-card {
+  background: var(--color-card);
+  border-radius: 12px;
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
   margin-bottom: 24px;
 }
 
-.profile-info {
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary-border);
+  color: var(--color-primary);
+  font-size: 24px;
+  font-weight: 700;
   display: flex;
-  gap: 20px;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.profile-details h2 {
-  margin: 0 0 4px 0;
+.profile-name {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .profile-bio {
-  color: #606266;
-  margin: 4px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin: 0 0 6px 0;
 }
 
-.profile-email, .profile-time {
-  color: #909399;
-  font-size: 13px;
-  margin: 2px 0;
+.profile-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
 }
 
-.empty-state {
-  padding: 40px 0;
+.meta-dot {
+  color: var(--color-divider);
+}
+
+.section-header {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .loading {
