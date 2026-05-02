@@ -1,90 +1,107 @@
 <template>
   <div class="app-layout">
-    <el-header class="app-header">
-      <div class="header-left">
+    <header class="app-header">
+      <div class="header-inner">
         <router-link to="/" class="logo">社区</router-link>
-      </div>
-      <div class="header-center desktop-menu">
-        <el-menu mode="horizontal" :ellipsis="false" router :default-active="route.path">
-          <el-menu-item index="/">首页</el-menu-item>
-          <el-menu-item v-if="authStore.isLoggedIn" index="/favorites">收藏</el-menu-item>
-        </el-menu>
-      </div>
-      <div class="header-right">
-        <template v-if="authStore.isLoggedIn">
-          <el-dropdown trigger="click">
-            <div class="user-avatar">
-              <el-avatar :size="32" :src="authStore.user?.avatar_url || undefined">
-                {{ avatarText }}
-              </el-avatar>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="router.push(`/user/${authStore.user?.id}`)">
-                  个人中心
-                </el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </template>
-        <template v-else>
-          <el-button type="primary" class="desktop-login-btn" @click="router.push('/login')">登录</el-button>
-        </template>
-        <el-button class="hamburger" text @click="drawerVisible = true">
-          <el-icon :size="22"><Menu /></el-icon>
-        </el-button>
-      </div>
-    </el-header>
 
-    <el-drawer v-model="drawerVisible" direction="rtl" size="240px" :show-close="false">
-      <div class="drawer-menu">
-        <router-link to="/" class="drawer-item" @click="drawerVisible = false">首页</router-link>
-        <router-link
-          v-if="authStore.isLoggedIn"
-          to="/favorites"
-          class="drawer-item"
-          @click="drawerVisible = false"
-        >
-          收藏
-        </router-link>
-        <template v-if="authStore.isLoggedIn">
-          <router-link
-            :to="`/user/${authStore.user?.id}`"
-            class="drawer-item"
-            @click="drawerVisible = false"
-          >
-            个人中心
-          </router-link>
-          <div class="drawer-item drawer-logout" @click="handleLogout">退出登录</div>
-        </template>
-        <router-link
-          v-else
-          to="/login"
-          class="drawer-item"
-          @click="drawerVisible = false"
-        >
-          登录
-        </router-link>
-      </div>
-    </el-drawer>
+        <!-- PC: pills inline in header -->
+        <div class="channel-pills desktop-pills" v-if="channels.length">
+          <button
+            class="pill"
+            :class="{ active: selectedChannelId === 'all' }"
+            @click="handleChannelSelect('all')"
+          >全部</button>
+          <button
+            v-for="ch in channels"
+            :key="ch.id"
+            class="pill"
+            :class="{ active: selectedChannelId === String(ch.id) }"
+            @click="handleChannelSelect(String(ch.id))"
+          >{{ ch.name }}</button>
+        </div>
 
-    <el-main class="app-main">
+        <div class="header-actions">
+          <template v-if="authStore.isLoggedIn">
+            <button class="btn-publish desktop-publish" @click="router.push('/post/create')">
+              ✏️ 发布
+            </button>
+            <el-dropdown trigger="click">
+              <button class="avatar-btn">{{ avatarText }}</button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="router.push(`/user/${authStore.user?.id}`)">
+                    个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="router.push('/favorites')">
+                    我的收藏
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+          <template v-else>
+            <button class="btn-login" @click="router.push('/login')">登录</button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Mobile: pills below header bar -->
+      <div class="channel-pills mobile-pills" v-if="channels.length">
+        <button
+          class="pill"
+          :class="{ active: selectedChannelId === 'all' }"
+          @click="handleChannelSelect('all')"
+        >全部</button>
+        <button
+          v-for="ch in channels"
+          :key="ch.id"
+          class="pill"
+          :class="{ active: selectedChannelId === String(ch.id) }"
+          @click="handleChannelSelect(String(ch.id))"
+        >{{ ch.name }}</button>
+      </div>
+    </header>
+
+    <main class="app-main">
       <router-view />
-    </el-main>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ref, computed } from 'vue'
-import { Menu } from '@element-plus/icons-vue'
+import { useQuery } from '@tanstack/vue-query'
 import { useAuthStore } from '@/stores/auth'
+import { getPublicChannels } from '@/api/channel'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const drawerVisible = ref(false)
+
+const { data: channelData } = useQuery({
+  queryKey: ['channels'],
+  queryFn: getPublicChannels,
+})
+const channels = computed(() => channelData.value ?? [])
+
+const selectedChannelId = ref<string>(
+  route.query.channel_id ? String(route.query.channel_id) : 'all'
+)
+
+watch(() => route.query.channel_id, (val) => {
+  selectedChannelId.value = val ? String(val) : 'all'
+})
+
+function handleChannelSelect(id: string) {
+  selectedChannelId.value = id
+  if (id === 'all') {
+    router.push({ path: '/', query: {} })
+  } else {
+    router.push({ path: '/', query: { channel_id: id } })
+  }
+}
 
 const avatarText = computed(() => {
   const name = authStore.user?.nickname || authStore.user?.email || ''
@@ -92,7 +109,6 @@ const avatarText = computed(() => {
 })
 
 function handleLogout() {
-  drawerVisible.value = false
   authStore.logout()
   router.push('/')
 }
@@ -100,101 +116,130 @@ function handleLogout() {
 
 <style scoped>
 .app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 0 24px;
-  height: 60px;
-  background: #fff;
+  background: var(--color-card);
+  box-shadow: 0 1px 0 var(--color-divider);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
-.header-left .logo {
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 20px;
+}
+
+.logo {
   font-size: 20px;
-  font-weight: bold;
-  color: #409eff;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
   text-decoration: none;
 }
 
-.header-center {
-  flex: 1;
+/* Pill shared styles */
+.channel-pills {
   display: flex;
-  justify-content: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.channel-pills::-webkit-scrollbar { display: none; }
+
+.pill {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1.5px solid var(--color-divider);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.pill:hover { border-color: var(--color-primary-border); color: var(--color-primary); }
+.pill.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  font-weight: 600;
 }
 
-.header-center .el-menu {
-  border-bottom: none;
+/* Desktop pills: flex:1 in header row */
+.desktop-pills {
+  flex: 1;
 }
 
-.header-right {
+/* Mobile pills: separate row below header */
+.mobile-pills {
+  display: none;
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
-.user-avatar {
+.btn-publish {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-login {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 18px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.avatar-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-}
-
-.hamburger {
-  display: none;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
 }
 
 .app-main {
-  max-width: 800px;
+  padding: 20px 20px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 24px;
 }
 
-.drawer-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.drawer-item {
-  display: block;
-  padding: 12px 16px;
-  color: #303133;
-  text-decoration: none;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: background 0.15s;
-}
-
-.drawer-item:hover {
-  background: #f5f7fa;
-}
-
-.drawer-logout {
-  cursor: pointer;
-  color: #f56c6c;
-  border-top: 1px solid #e4e7ed;
-  margin-top: 8px;
-  padding-top: 16px;
-}
-
-@media (max-width: 768px) {
-  .app-header {
-    padding: 0 12px;
-  }
-
-  .desktop-menu,
-  .desktop-login-btn {
-    display: none !important;
-  }
-
-  .hamburger {
-    display: inline-flex;
-  }
-
-  .app-main {
-    padding: 16px 12px;
-  }
+@media (max-width: 767px) {
+  .desktop-pills { display: none; }
+  .mobile-pills { display: flex; }
+  .desktop-publish { display: none; }
+  .header-inner { padding: 0 12px; }
+  .app-main { padding: 12px; }
 }
 </style>
