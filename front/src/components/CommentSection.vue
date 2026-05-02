@@ -245,12 +245,14 @@ async function handleDeleteReply(commentId: number, replyId: number) {
 <style scoped>
 .comment-section {
   margin-top: 24px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--color-divider);
   padding-top: 16px;
 }
 
 .comment-section h3 {
   margin-bottom: 16px;
+  font-size: 15px;
+  color: var(--color-text-primary);
 }
 
 .comment-input, .reply-input {
@@ -258,17 +260,18 @@ async function handleDeleteReply(commentId: number, replyId: number) {
 }
 
 .login-hint {
-  color: #909399;
+  color: var(--color-text-muted);
   margin-bottom: 16px;
+  font-size: 14px;
 }
 
 .login-hint a {
-  color: #409eff;
+  color: var(--color-primary);
 }
 
 .comment-item {
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .comment-header {
@@ -281,10 +284,11 @@ async function handleDeleteReply(commentId: number, replyId: number) {
 .comment-author {
   font-weight: 500;
   font-size: 14px;
+  color: var(--color-text-primary);
 }
 
 .comment-time {
-  color: #909399;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -292,6 +296,7 @@ async function handleDeleteReply(commentId: number, replyId: number) {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 8px;
+  color: var(--color-text-primary);
 }
 
 .replies-section {
@@ -300,7 +305,7 @@ async function handleDeleteReply(commentId: number, replyId: number) {
 
 .reply-item {
   padding: 8px 0;
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid var(--color-divider);
 }
 
 .reply-header {
@@ -313,24 +318,26 @@ async function handleDeleteReply(commentId: number, replyId: number) {
 
 .reply-author {
   font-weight: 500;
+  color: var(--color-text-primary);
 }
 
 .reply-to {
-  color: #909399;
+  color: var(--color-text-muted);
 }
 
 .reply-to-user {
-  color: #409eff;
+  color: var(--color-primary);
 }
 
 .reply-time {
-  color: #909399;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
 .reply-content {
   font-size: 13px;
   line-height: 1.5;
+  color: var(--color-text-secondary);
 }
 
 .reply-input {
@@ -341,7 +348,8 @@ async function handleDeleteReply(commentId: number, replyId: number) {
 
 .empty-comments {
   text-align: center;
-  color: #909399;
+  color: var(--color-text-muted);
   padding: 20px;
+  font-size: 14px;
 }
 </style>
