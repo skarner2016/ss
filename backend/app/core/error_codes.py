@@ -2,11 +2,12 @@ class ErrorCode:
     # 参数错误 1xxx
     PARAM_ERROR = (1001, "参数错误")
     EMAIL_FORMAT_ERROR = (1002, "邮箱格式不正确")
-    PASSWORD_TOO_SHORT = (1003, "密码长度不能少于6位")
+    CODE_INVALID = (1003, "验证码错误或已过期")
+    CODE_SEND_FAILED = (1004, "邮件发送失败，请稍后重试")
+    CODE_RATE_LIMITED = (1005, "发送过于频繁，请稍后重试")
 
     # 认证错误 2xxx
     UNAUTHORIZED = (2001, "未登录")
-    PASSWORD_ERROR = (2002, "密码错误")
     USER_DISABLED = (2003, "账号已禁用")
     USER_CANCELLED = (2004, "账号已注销")
 
