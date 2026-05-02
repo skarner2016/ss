@@ -1,7 +1,7 @@
 <template>
   <div v-if="post" class="post-detail">
-    <!-- Cover placeholder -->
-    <div class="post-cover" :class="coverRatio">
+    <!-- Cover: left panel on PC, top on mobile -->
+    <div class="post-cover">
       <span class="cover-icon">🖼️</span>
     </div>
 
@@ -80,14 +80,6 @@ const { data: post, isLoading } = useQuery({
   queryFn: () => getPostDetail(postId.value),
 })
 
-const coverRatio = computed(() => {
-  if (!post.value) return 'mid'
-  const r = post.value.id % 3
-  if (r === 0) return 'tall'
-  if (r === 1) return 'mid'
-  return 'short'
-})
-
 const authorInitial = computed(() => {
   if (!post.value) return '?'
   const name = post.value.author_nickname || String(post.value.user_id)
@@ -145,20 +137,19 @@ async function handleDelete() {
   background: var(--color-card);
   border-radius: 12px;
   overflow: hidden;
-  max-width: 680px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
 .post-cover {
   width: 100%;
+  max-height: 420px;
   background: linear-gradient(135deg, #fff5f6 0%, #ffe0e5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  aspect-ratio: 16 / 9;
 }
-.post-cover.tall  { aspect-ratio: 3 / 4; max-height: 480px; }
-.post-cover.mid   { aspect-ratio: 16 / 9; }
-.post-cover.short { aspect-ratio: 4 / 3; }
 
 .cover-icon {
   font-size: 48px;
@@ -166,7 +157,7 @@ async function handleDelete() {
 }
 
 .post-body {
-  padding: 20px;
+  padding: 24px;
 }
 
 .post-title {
@@ -283,7 +274,6 @@ async function handleDelete() {
 .action-fav.favorited { color: #f59e0b; }
 
 .heart { font-size: 12px; }
-
 .action-fav { font-size: 12px; }
 
 .action-text {
@@ -306,5 +296,10 @@ async function handleDelete() {
   text-align: center;
   padding: 40px;
   color: var(--color-text-muted);
+}
+
+@media (max-width: 767px) {
+  .post-cover { max-height: 280px; }
+  .post-body { padding: 16px; }
 }
 </style>
