@@ -27,7 +27,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: change-me-in-production
       DEBUG: "false"
-      RESEND_API_KEY: ${RESEND_API_KEY:-re_3r3VFi1x_66J173Z7xhh1d4V7W673aGDB}
+      RESEND_API_KEY: ${RESEND_API_KEY:-test-reset-api-key}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
 
   front:
