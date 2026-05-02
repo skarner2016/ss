@@ -26,7 +26,7 @@
               ✏️ 发布
             </button>
             <el-dropdown trigger="click">
-              <button class="avatar-btn">{{ avatarText }}</button>
+              <button class="avatar-btn" :aria-label="`${authStore.user?.nickname || 'User'} menu`">{{ avatarText }}</button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item @click="router.push(`/user/${authStore.user?.id}`)">
@@ -83,6 +83,7 @@ const authStore = useAuthStore()
 const { data: channelData } = useQuery({
   queryKey: ['channels'],
   queryFn: getPublicChannels,
+  staleTime: 5 * 60 * 1000,
 })
 const channels = computed(() => channelData.value ?? [])
 
@@ -95,7 +96,6 @@ watch(() => route.query.channel_id, (val) => {
 })
 
 function handleChannelSelect(id: string) {
-  selectedChannelId.value = id
   if (id === 'all') {
     router.push({ path: '/', query: {} })
   } else {
@@ -104,7 +104,7 @@ function handleChannelSelect(id: string) {
 }
 
 const avatarText = computed(() => {
-  const name = authStore.user?.nickname || authStore.user?.email || ''
+  const name = authStore.user?.nickname || authStore.user?.email || '?'
   return name.charAt(0).toUpperCase()
 })
 
