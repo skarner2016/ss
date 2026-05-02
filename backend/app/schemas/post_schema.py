@@ -22,6 +22,7 @@ class PostListRequest(BaseModel):
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
     channel_id: int | None = None
+    user_id: int | None = None
 
 
 class PostDetailRequest(BaseModel):
