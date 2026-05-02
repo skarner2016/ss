@@ -1,9 +1,11 @@
 import pytest
+from unittest.mock import patch, AsyncMock
 from httpx import AsyncClient
 
 
 async def _register_and_login(client: AsyncClient, email: str = "u@test.com") -> str:
-    resp = await client.post("/api/auth/login", json={"email": email, "password": "pass123"})
+    with patch("app.services.auth_service.verify_code", new=AsyncMock(return_value=True)):
+        resp = await client.post("/api/auth/login", json={"email": email, "code": "123456"})
     return resp.json()["data"]["token"]
 
 
