@@ -27,6 +27,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: change-me-in-production
       DEBUG: "false"
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@yourdomain.com}
 
   front:
     build: ./front

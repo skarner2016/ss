@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
 
+    resend_api_key: str = ""
+    resend_from_email: str = "noreply@yourdomain.com"
+    code_ttl: int = 600  # 10 minutes
+    code_length: int = 6
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
