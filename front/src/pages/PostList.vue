@@ -1,43 +1,65 @@
 <template>
-  <div class="post-list">
-    <el-tabs v-model="selectedChannelId" class="channel-tabs" @tab-change="handleTabChange">
-      <el-tab-pane label="全部" name="all" />
-      <el-tab-pane
-        v-for="ch in channels"
-        :key="ch.id"
-        :label="ch.name"
-        :name="String(ch.id)"
-      />
-    </el-tabs>
+  <div class="post-list-page">
+    <!-- Waterfall -->
+    <div class="waterfall-wrap">
+      <div v-if="flattenPosts.length === 0 && !isLoading" class="empty-state">
+        <el-empty description="暂无帖子" />
+      </div>
 
-    <div v-if="flattenPosts.length === 0 && !isLoading" class="empty-state">
-      <el-empty description="暂无帖子" />
-    </div>
-    <PostCard
-      v-for="post in flattenPosts"
-      :key="post.id"
-      :post="post"
-    />
-    <div v-if="isLoading" class="loading-more">
-      <el-icon class="is-loading"><Loading /></el-icon>
-      加载中...
-    </div>
-    <div v-else-if="hasMore" class="load-more" ref="loadMoreRef">
-      <el-button text @click="() => fetchNextPage()">加载更多</el-button>
-    </div>
-    <div v-else-if="flattenPosts.length > 0" class="no-more">
-      没有更多了
+      <div class="waterfall">
+        <PostCard
+          v-for="post in flattenPosts"
+          :key="post.id"
+          :post="post"
+        />
+      </div>
+
+      <div v-if="isLoading" class="status-row">
+        <el-icon class="is-loading"><Loading /></el-icon> 加载中...
+      </div>
+      <div v-else-if="hasMore" class="status-row" ref="loadMoreRef">
+        <el-button text @click="() => fetchNextPage()">加载更多</el-button>
+      </div>
+      <div v-else-if="flattenPosts.length > 0" class="status-row muted">
+        没有更多了
+      </div>
     </div>
 
-    <el-button
+    <!-- Sidebar (PC only) -->
+    <aside class="sidebar">
+      <div class="sidebar-card" v-if="hotPosts.length">
+        <div class="sidebar-title">🔥 热门帖子</div>
+        <div
+          v-for="(post, i) in hotPosts"
+          :key="post.id"
+          class="hot-item"
+          @click="router.push(`/post/${post.id}`)"
+        >
+          <span class="hot-rank" :class="{ top: i < 3 }">{{ i + 1 }}</span>
+          <span class="hot-text">{{ post.title }}</span>
+          <span class="hot-count">{{ post.like_count }}♥</span>
+        </div>
+      </div>
+
+      <div class="sidebar-card" v-if="channels.length">
+        <div class="sidebar-title">📌 全部频道</div>
+        <div class="sidebar-channels">
+          <span
+            v-for="ch in channels"
+            :key="ch.id"
+            class="sidebar-channel"
+            @click="router.push({ path: '/', query: { channel_id: ch.id } })"
+          >{{ ch.name }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile FAB -->
+    <button
       v-if="authStore.isLoggedIn"
-      type="primary"
-      circle
-      class="fab-button"
+      class="fab"
       @click="router.push('/post/create')"
-    >
-      <el-icon><EditPen /></el-icon>
-    </el-button>
+    >✏</button>
   </div>
 </template>
 
@@ -45,7 +67,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useInfiniteQuery, useQuery } from '@tanstack/vue-query'
-import { Loading, EditPen } from '@element-plus/icons-vue'
+import { Loading } from '@element-plus/icons-vue'
 import { getPostList } from '@/api/post'
 import { getPublicChannels } from '@/api/channel'
 import { useAuthStore } from '@/stores/auth'
@@ -55,20 +77,17 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const selectedChannelId = ref<string>(
-  route.query.channel_id ? String(route.query.channel_id) : 'all'
-)
+const activeChannelId = computed<number | null>(() => {
+  const v = route.query.channel_id
+  return v ? Number(v) : null
+})
 
 const { data: channelData } = useQuery({
   queryKey: ['channels'],
   queryFn: getPublicChannels,
+  staleTime: 5 * 60 * 1000,
 })
 const channels = computed(() => channelData.value ?? [])
-
-const activeChannelId = computed<number | null>(() => {
-  if (selectedChannelId.value === 'all') return null
-  return Number(selectedChannelId.value)
-})
 
 const { data, isLoading, fetchNextPage, hasNextPage } = useInfiniteQuery({
   queryKey: computed(() => ['posts', activeChannelId.value]),
@@ -79,17 +98,13 @@ const { data, isLoading, fetchNextPage, hasNextPage } = useInfiniteQuery({
   initialPageParam: 1,
 })
 
-function handleTabChange(name: string | number) {
-  selectedChannelId.value = String(name)
-  if (name === 'all') {
-    router.replace({ query: {} })
-  } else {
-    router.replace({ query: { channel_id: name } })
-  }
-}
-
-const flattenPosts = computed(() => data.value?.pages.flatMap((page) => page.items) ?? [])
+const flattenPosts = computed(() => data.value?.pages.flatMap((p) => p.items) ?? [])
 const hasMore = computed(() => hasNextPage.value ?? false)
+
+const hotPosts = computed(() =>
+  [...flattenPosts.value].sort((a, b) => b.like_count - a.like_count).slice(0, 5)
+)
+
 const loadMoreRef = ref<HTMLElement>()
 let observer: IntersectionObserver | null = null
 
@@ -109,27 +124,137 @@ onUnmounted(() => observer?.disconnect())
 </script>
 
 <style scoped>
-.post-list {
-  position: relative;
+.post-list-page {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
 }
 
-.channel-tabs {
-  margin-bottom: 12px;
+/* Waterfall container */
+.waterfall-wrap { flex: 1; min-width: 0; }
+
+.waterfall {
+  columns: 4;
+  column-gap: 10px;
 }
 
-.loading-more, .no-more, .load-more {
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sidebar-card {
+  background: var(--color-card);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 10px;
+}
+
+.hot-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-divider);
+  cursor: pointer;
+}
+.hot-item:last-child { border-bottom: none; }
+
+.hot-rank {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #f5f5f5;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hot-rank.top { background: var(--color-primary); color: #fff; }
+
+.hot-text {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hot-count {
+  font-size: 10px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sidebar-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sidebar-channel {
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-border);
+  cursor: pointer;
+}
+
+/* Status rows */
+.status-row {
   text-align: center;
   padding: 16px;
-  color: #909399;
+  color: var(--color-text-muted);
+}
+.status-row.muted { font-size: 13px; }
+
+/* FAB — mobile only */
+.fab {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 36, 66, 0.4);
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
 }
 
-.fab-button {
-  position: fixed;
-  bottom: 40px;
-  right: 40px;
-  width: 56px;
-  height: 56px;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+/* Responsive */
+@media (max-width: 1023px) {
+  .sidebar { display: none; }
+  .waterfall { columns: 3; column-gap: 8px; }
+}
+
+@media (max-width: 767px) {
+  .waterfall { columns: 2; column-gap: 6px; }
+  .fab { display: flex; }
 }
 </style>
