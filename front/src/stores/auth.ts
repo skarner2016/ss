@@ -9,8 +9,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!token.value)
 
-  async function login(email: string, password: string) {
-    const result = await apiLogin({ email, password })
+  async function login(email: string, code: string) {
+    const result = await apiLogin({ email, code })
     token.value = result.token
     user.value = result.user
   }

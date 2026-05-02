@@ -1,11 +1,13 @@
 import pytest
+from unittest.mock import patch, AsyncMock
 
 
 @pytest.mark.asyncio
+@patch("app.services.auth_service.verify_code", new=AsyncMock(return_value=True))
 async def test_login_register_new_user(client):
     response = await client.post("/api/auth/login", json={
         "email": "test_new@example.com",
-        "password": "password123"
+        "code": "123456"
     })
     assert response.status_code == 200
     data = response.json()
@@ -15,16 +17,17 @@ async def test_login_register_new_user(client):
 
 
 @pytest.mark.asyncio
+@patch("app.services.auth_service.verify_code", new=AsyncMock(return_value=True))
 async def test_login_existing_user(client):
     # register first
     await client.post("/api/auth/login", json={
         "email": "existing@example.com",
-        "password": "password123"
+        "code": "123456"
     })
     # login again
     response = await client.post("/api/auth/login", json={
         "email": "existing@example.com",
-        "password": "password123"
+        "code": "123456"
     })
     assert response.status_code == 200
     data = response.json()
@@ -34,21 +37,15 @@ async def test_login_existing_user(client):
 
 
 @pytest.mark.asyncio
-async def test_login_wrong_password(client):
-    # register first
-    await client.post("/api/auth/login", json={
-        "email": "wrongpw@example.com",
-        "password": "password123"
-    })
-    # login with wrong password
+@patch("app.services.auth_service.verify_code", new=AsyncMock(return_value=False))
+async def test_login_wrong_code(client):
     response = await client.post("/api/auth/login", json={
-        "email": "wrongpw@example.com",
-        "password": "wrongpassword"
+        "email": "wrongcode@example.com",
+        "code": "999999"
     })
     assert response.status_code == 200
     data = response.json()
-    assert data["code"] == 2002
-    assert data["message"] == "密码错误"
+    assert data["code"] == 1003
 
 
 @pytest.mark.asyncio
@@ -60,11 +57,12 @@ async def test_me_without_auth(client):
 
 
 @pytest.mark.asyncio
+@patch("app.services.auth_service.verify_code", new=AsyncMock(return_value=True))
 async def test_me_with_auth(client):
     # login to get token
     login_resp = await client.post("/api/auth/login", json={
         "email": "me_test@example.com",
-        "password": "password123"
+        "code": "123456"
     })
     token = login_resp.json()["data"]["token"]
 
