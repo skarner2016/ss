@@ -15,7 +15,7 @@
     </el-card>
 
     <h3>TA 的帖子</h3>
-    <PostCard v-for="post in userPosts" :key="post.id" :post="post" />
+    <PostCard v-for="post in userPosts" :key="post.id" :post="post" :query-key="['userPosts', String(userId)]" />
     <div v-if="userPosts.length === 0" class="empty-state">
       <el-empty description="暂无帖子" />
     </div>
@@ -38,18 +38,16 @@ const route = useRoute()
 const userId = computed(() => Number(route.params.id))
 
 const { data: user } = useQuery({
-  queryKey: ['user', userId.value],
+  queryKey: computed(() => ['user', userId.value]),
   queryFn: () => getUserInfo(userId.value),
 })
 
 const { data: postData } = useQuery({
-  queryKey: ['userPosts', userId.value],
-  queryFn: () => getPostList({ page: 1, page_size: 50 }),
+  queryKey: computed(() => ['userPosts', String(userId.value)]),
+  queryFn: () => getPostList({ page: 1, page_size: 50, user_id: userId.value }),
 })
 
-const userPosts = computed(() => {
-  return postData.value?.items.filter((p) => p.user_id === userId.value) ?? []
-})
+const userPosts = computed(() => postData.value?.items ?? [])
 </script>
 
 <style scoped>

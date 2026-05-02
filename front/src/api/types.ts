@@ -104,6 +104,7 @@ export interface PostListParams {
   page: number
   page_size: number
   channel_id?: number | null
+  user_id?: number | null
 }
 
 export interface PostCreateParams {

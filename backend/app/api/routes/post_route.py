@@ -78,7 +78,7 @@ async def post_detail(req: PostDetailRequest):
 @router.post("/list")
 async def post_list(req: PostListRequest):
     db = get_db()
-    posts, total = await PostService.get_list(db, req.page, req.page_size, req.channel_id)
+    posts, total = await PostService.get_list(db, req.page, req.page_size, req.channel_id, req.user_id)
     total_pages = (total + req.page_size - 1) // req.page_size
 
     user_ids = list({p.user_id for p in posts})

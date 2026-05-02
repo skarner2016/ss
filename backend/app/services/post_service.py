@@ -32,30 +32,32 @@ class PostService:
         return post
 
     @staticmethod
-    async def get_list(db: AsyncSession, page: int, page_size: int, channel_id: int | None = None) -> tuple[list[PostModel], int]:
+    async def get_list(db: AsyncSession, page: int, page_size: int, channel_id: int | None = None, user_id: int | None = None) -> tuple[list[PostModel], int]:
         from app.models.channel_model import PostChannelModel
-        base_filter = PostModel.deleted_at.is_(None)
+        filters = [PostModel.deleted_at.is_(None)]
+        if user_id is not None:
+            filters.append(PostModel.user_id == user_id)
 
         if channel_id is not None:
             count_stmt = (
                 select(func.count())
                 .select_from(PostModel)
                 .join(PostChannelModel, PostChannelModel.post_id == PostModel.id)
-                .where(base_filter, PostChannelModel.channel_id == channel_id)
+                .where(*filters, PostChannelModel.channel_id == channel_id)
             )
             list_stmt = (
                 select(PostModel)
                 .join(PostChannelModel, PostChannelModel.post_id == PostModel.id)
-                .where(base_filter, PostChannelModel.channel_id == channel_id)
+                .where(*filters, PostChannelModel.channel_id == channel_id)
                 .order_by(PostModel.id.desc())
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )
         else:
-            count_stmt = select(func.count()).select_from(PostModel).where(base_filter)
+            count_stmt = select(func.count()).select_from(PostModel).where(*filters)
             list_stmt = (
                 select(PostModel)
-                .where(base_filter)
+                .where(*filters)
                 .order_by(PostModel.id.desc())
                 .offset((page - 1) * page_size)
                 .limit(page_size)

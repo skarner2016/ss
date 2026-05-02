@@ -79,8 +79,8 @@ const { data, isLoading, fetchNextPage, hasNextPage } = useInfiniteQuery({
   initialPageParam: 1,
 })
 
-function handleTabChange(name: string) {
-  selectedChannelId.value = name
+function handleTabChange(name: string | number) {
+  selectedChannelId.value = String(name)
   if (name === 'all') {
     router.replace({ query: {} })
   } else {
